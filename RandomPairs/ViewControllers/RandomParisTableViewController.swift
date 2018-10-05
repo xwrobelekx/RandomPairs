@@ -10,6 +10,9 @@ import UIKit
 
 class RandomParisTableViewController: UITableViewController {
 
+    var sections: Int = 0
+    var pseudoSection : [Int] = []
+    
     override func viewDidLoad() {
         super.viewDidLoad()
     }
@@ -17,21 +20,32 @@ class RandomParisTableViewController: UITableViewController {
     // MARK: - Table view data source
 
     override func numberOfSections(in tableView: UITableView) -> Int {
-        // #warning Incomplete implementation, return the number of sections
-        return 0
-    }
+        if RandomPairController.shared.randomPeople.count % 2 == 1 {
+            sections = ((RandomPairController.shared.randomPeople.count + 1) / 2)
+        } else {
+            sections = RandomPairController.shared.randomPeople.count / 2
+        }
 
+        
+        return sections
+    }
+    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of rows
-        return 0
+        var rows: Int = 0
+        
+        if section < RandomPairController.shared.numberOfRowsAtSection.count {
+            rows = RandomPairController.shared.numberOfRowsAtSection[section]
+        }
+        
+     
+        
+        return rows
     }
-
  
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
-
-        // Configure the cell...
-
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        let person = RandomPairController.shared.randomPeople[indexPath.row]
+        cell.textLabel?.text = "\(person.firstName) \(person.lastName)"
         return cell
     }
 
@@ -74,11 +88,19 @@ class RandomParisTableViewController: UITableViewController {
     //MARK: - Actions
     
     @IBAction func randomizeButtonTapped(_ sender: Any) {
+        RandomPairController.shared.randomPeople.shuffle()
+        tableView.reloadData()
     }
     
     @IBAction func addButtonTapped(_ sender: Any) {
         
-        presentAddAlertWith(title: "Please Enter your full name", message: nil)
+        presentAddAlertWith(title: "Please enter your name.", message: nil) { (success) in
+            if success {
+                DispatchQueue.main.async {
+                    self.tableView.reloadData()
+                }
+            }
+        }
         
         
     }
@@ -90,27 +112,32 @@ class RandomParisTableViewController: UITableViewController {
 
 extension RandomParisTableViewController {
     
-    func presentAddAlertWith(title: String, message: String?) {
+    func presentAddAlertWith(title: String, message: String?, completion: @escaping(Bool) -> Void) {
         
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addTextField { (firstNameTextField) in
-            firstNameTextField.placeholder = "Please enter you first name"
+            firstNameTextField.placeholder = "first name"
         }
         alert.addTextField { (lastNameTextField) in
-            lastNameTextField.placeholder = "Please enter your last name"
+            lastNameTextField.placeholder = "last name"
         }
         let addButton = UIAlertAction(title: "Add", style: .default) { (_) in
             guard let fName = alert.textFields?.first?.text,
                 let lName = alert.textFields?[1].text else {return}
+            let person  = RandomPerson(firstName: fName, lastName: lName)
+            RandomPairController.shared.save(person: person)
+           completion(true
             
-            
-            //call save function
+            )
+          
         }
         let cancelButton = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
         
         alert.addAction(addButton)
         alert.addAction(cancelButton)
-    
+        present(alert, animated: true, completion: nil)
+        
+        
         
     }
     
